@@ -1,0 +1,1489 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Dashboard by Vedant Joliya</title>
+    <link rel="icon" type="image/png" href="/static/logo.png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg-color: #f8fafc;
+            --surface: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --primary: #2563eb;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            margin: 0;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Layout Panels */
+        .sidebar {
+            width: 320px;
+            background-color: var(--surface);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            z-index: 10;
+            overflow-y: auto;
+        }
+
+        .sidebar-header {
+            padding: 24px;
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+
+        .sidebar-header h2 {
+            margin: 0;
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .sidebar-header p {
+            margin: 4px 0 0;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .nav-menu {
+            padding: 16px;
+            flex-shrink: 0;
+        }
+
+        .nav-item {
+            padding: 12px 16px;
+            margin-bottom: 8px;
+            border-radius: 8px;
+            font-weight: 500;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .nav-item:hover {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+        }
+
+        .nav-item.active {
+            background-color: #e0e7ff;
+            color: var(--primary);
+            font-weight: 600;
+        }
+
+        .scenario-section {
+            padding: 16px;
+            border-top: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+
+        .filters-section {
+            padding: 20px 16px;
+            border-top: 1px solid var(--border);
+            background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+            flex-shrink: 0;
+        }
+
+        .filters-section h3 {
+            margin: 0 0 16px 0;
+            font-size: 0.85rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #475569;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .filters-section h3::before {
+            content: "";
+            display: inline-block;
+            width: 4px;
+            height: 12px;
+            background: var(--primary);
+            border-radius: 2px;
+        }
+
+        .filter-group {
+            margin-bottom: 16px;
+        }
+
+        .filter-group:last-child {
+            margin-bottom: 0;
+        }
+
+        .filter-group label {
+            display: block;
+            font-size: 0.78rem;
+            font-weight: 600;
+            margin-bottom: 6px;
+            color: #64748b;
+            text-transform: capitalize;
+        }
+
+        .filter-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .filter-opt {
+            background: #f1f5f9;
+            color: #475569;
+            border: 1px solid #e2e8f0;
+            padding: 8px 10px;
+            border-radius: 8px;
+            font-size: 0.78rem;
+            font-weight: 550;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            text-align: center;
+            flex: 1 1 calc(50% - 3px);
+            user-select: none;
+        }
+        
+        .filter-options.three-cols .filter-opt {
+            flex: 1 1 calc(33.33% - 4px);
+        }
+
+        .filter-opt.full-width {
+            flex: 1 1 100%;
+        }
+
+        .filter-opt:hover {
+            background: #e2e8f0;
+            color: #1e293b;
+            transform: translateY(-1px);
+        }
+
+        .filter-opt.active {
+            background: linear-gradient(135deg, var(--primary), #1d4ed8);
+            color: #ffffff;
+            border-color: var(--primary);
+            box-shadow: 0 4px 10px rgba(37, 99, 235, 0.15);
+            font-weight: 600;
+        }
+
+        .main-content {
+            flex: 1;
+            padding: 32px 40px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Top Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 32px;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 1.8rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+
+        /* Export Button */
+        .export-btn {
+            background: linear-gradient(135deg, #1e293b, #0f172a);
+            color: #ffffff;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(15, 23, 42, 0.15);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .export-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(15, 23, 42, 0.25);
+            background: linear-gradient(135deg, #334155, #1e293b);
+        }
+
+        .export-btn svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        /* KPI Cards */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 32px;
+        }
+
+        .kpi-card {
+            background: var(--surface);
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow);
+        }
+
+        .kpi-card h3 {
+            margin: 0 0 8px;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .kpi-card .value {
+            font-size: 1.75rem;
+            font-weight: 700;
+            margin: 0 0 4px;
+        }
+
+        .kpi-card .trend {
+            font-size: 0.85rem;
+            color: #10b981;
+            font-weight: 500;
+        }
+
+        /* Charts */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+
+        .chart-container {
+            background: var(--surface);
+            padding: 24px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow);
+        }
+
+        .chart-container.full-width {
+            grid-column: 1 / -1;
+        }
+
+        .chart-container h3 {
+            margin: 0 0 20px;
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        /* Scenarios UI */
+        .scenario-section h3 {
+            margin: 0 0 16px;
+            font-size: 1.1rem;
+            color: var(--text-main);
+        }
+
+        .reset-btn {
+            width: 100%;
+            padding: 10px;
+            background: #ffffff;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: var(--text-muted);
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .reset-btn:hover {
+            background: #f8fafc;
+            color: var(--text-main);
+            border-color: #cbd5e1;
+        }
+
+        details {
+            background: #ffffff;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            border: 1px solid var(--border);
+        }
+
+        summary {
+            padding: 12px 16px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .details-content {
+            padding: 16px;
+            border-top: 1px solid var(--border);
+            background: #f8fafc;
+        }
+
+        /* Custom Stepper */
+        .control-group {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .control-group:last-child {
+            margin-bottom: 0;
+        }
+
+        .control-group label {
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--text-main);
+        }
+
+        .stepper {
+            display: flex;
+            align-items: center;
+            background: #ffffff;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            overflow: hidden;
+            width: 100px;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+        }
+
+        .step-btn {
+            background: #ffffff;
+            border: none;
+            color: var(--text-muted);
+            width: 28px;
+            height: 28px;
+            cursor: pointer;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+            padding: 0;
+        }
+
+        .step-btn:hover {
+            background: #f1f5f9;
+            color: var(--text-main);
+        }
+
+        .step-val {
+            flex: 1;
+            text-align: center;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-main);
+            border-left: 1px solid var(--border);
+            border-right: 1px solid var(--border);
+            line-height: 28px;
+        }
+
+        /* Data Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+
+        th,
+        td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        th {
+            font-weight: 600;
+            color: var(--text-muted);
+            background: var(--bg-color);
+        }
+
+        tr:hover {
+            background-color: #f8fafc;
+        }
+
+        /* Editable Cells */
+        td[contenteditable="true"] {
+            background: #fdfbf7;
+            border: 1px dashed #fbbf24;
+            color: #0f172a;
+            font-family: monospace;
+            font-weight: 600;
+            cursor: text;
+            transition: all 0.2s;
+        }
+
+        td[contenteditable="true"]:focus {
+            outline: none;
+            background: #fff;
+            border: 1px solid var(--primary);
+            box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+        }
+
+        /* View Toggle */
+        .view-section {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .view-section.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(5px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Responsive Design */
+        .table-responsive {
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .mobile-toggle {
+            display: none;
+            background: none;
+            border: none;
+            font-size: 1.8rem;
+            cursor: pointer;
+            color: var(--text-main);
+            padding: 0;
+        }
+
+        @media (max-width: 1024px) {
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            body {
+                flex-direction: column;
+                height: auto;
+                overflow: auto;
+            }
+
+            .sidebar {
+                width: 100%;
+                border-right: none;
+                border-bottom: 1px solid var(--border);
+                overflow-y: visible;
+            }
+
+            .sidebar-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+
+            .mobile-toggle {
+                display: block;
+            }
+
+            .sidebar-content {
+                display: none;
+            }
+
+            .sidebar-content.show {
+                display: block;
+            }
+
+            .main-content {
+                padding: 16px;
+                overflow-y: visible;
+            }
+
+            .header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 12px;
+            }
+
+            .export-btn {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .kpi-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .chart-container {
+                padding: 16px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .kpi-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Chatbot Widget Stylings */
+        .chat-trigger {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, var(--primary), #1d4ed8);
+            border-radius: 50%;
+            box-shadow: 0 8px 32px rgba(37, 99, 235, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ffffff;
+            cursor: pointer;
+            z-index: 1000;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            animation: floatBob 3s ease-in-out infinite;
+        }
+
+        .chat-trigger:hover {
+            transform: scale(1.1);
+            box-shadow: 0 12px 36px rgba(37, 99, 235, 0.55);
+        }
+
+        .chat-trigger svg {
+            width: 26px;
+            height: 26px;
+            stroke: #ffffff;
+            transition: transform 0.3s ease;
+        }
+
+        .chat-trigger.active svg {
+            transform: rotate(90deg) scale(0.9);
+        }
+
+        /* Float bobbing keyframes */
+        @keyframes floatBob {
+            0% {
+                transform: translateY(0px);
+            }
+
+            50% {
+                transform: translateY(-8px);
+            }
+
+            100% {
+                transform: translateY(0px);
+            }
+        }
+
+        .chatbot-container {
+            position: fixed;
+            bottom: 96px;
+            right: 24px;
+            width: 350px;
+            height: 480px;
+            background: #ffffff;
+            border-radius: 16px;
+            box-shadow: 0 12px 40px rgba(15, 23, 42, 0.15);
+            border: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            z-index: 1001;
+            overflow: hidden;
+            transform: scale(0.8) translateY(40px);
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.2);
+            transform-origin: bottom right;
+        }
+
+        .chatbot-container.visible {
+            transform: scale(1) translateY(0);
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .chatbot-header {
+            background: #0f172a;
+            color: #ffffff;
+            padding: 16px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #1e293b;
+        }
+
+        .chat-close {
+            background: transparent;
+            border: none;
+            color: #94a3b8;
+            font-size: 1.5rem;
+            cursor: pointer;
+            line-height: 1;
+            padding: 0;
+            transition: color 0.2s;
+        }
+
+        .chat-close:hover {
+            color: #ffffff;
+        }
+
+        .chatbot-body {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            background: #f8fafc;
+        }
+
+        .chat-msg {
+            padding: 12px 16px;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            line-height: 1.5;
+            max-width: 80%;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+            animation: popIn 0.3s ease;
+        }
+
+        @keyframes popIn {
+            from {
+                transform: scale(0.9);
+                opacity: 0;
+            }
+
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .bot-msg {
+            background: #ffffff;
+            color: var(--text-main);
+            align-self: flex-start;
+            border-bottom-left-radius: 2px;
+            border: 1px solid var(--border);
+        }
+
+        .user-msg {
+            background: linear-gradient(135deg, var(--primary), #1d4ed8);
+            color: #ffffff;
+            align-self: flex-end;
+            border-bottom-right-radius: 2px;
+        }
+
+        .bot-msg a {
+            color: var(--primary);
+            text-decoration: underline;
+            font-weight: 600;
+        }
+
+        .chatbot-input {
+            display: flex;
+            padding: 16px;
+            border-top: 1px solid var(--border);
+            background: #ffffff;
+            gap: 8px;
+        }
+
+        .chatbot-input input {
+            flex: 1;
+            padding: 10px 14px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            outline: none;
+            font-size: 0.85rem;
+            font-family: inherit;
+            transition: border-color 0.2s;
+        }
+
+        .chatbot-input input:focus {
+            border-color: var(--primary);
+        }
+
+        .chatbot-input button {
+            background: linear-gradient(135deg, var(--primary), #1d4ed8);
+            color: #fff;
+            border: none;
+            padding: 0 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.85rem;
+            transition: opacity 0.2s;
+        }
+
+        .chatbot-input button:hover {
+            opacity: 0.9;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- LEFT SIDEBAR -->
+    <aside class="sidebar">
+        <div class="sidebar-header" style="display: flex; align-items: center; gap: 12px; padding: 18px 24px;">
+            <img src="/static/logo.png" alt="Logo" style="width: 42px; height: 42px; border-radius: 10px; object-fit: cover; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.06);">
+            <div style="flex-grow: 1;">
+                <h2 style="font-size: 1.1rem; font-weight: 700; margin: 0; color: var(--text-main); line-height: 1.2;">Smart Portal</h2>
+                <p style="font-size: 0.72rem; color: var(--text-muted); margin: 2px 0 0;">by <a href="https://vedantjoliya.free.nf/" target="_blank" style="color: var(--primary); font-weight: 600; text-decoration: none; border-bottom: 1px dotted var(--primary);">Vedant Joliya</a></p>
+            </div>
+            <button class="mobile-toggle"
+                onclick="document.getElementById('sidebar-content').classList.toggle('show')">☰</button>
+        </div>
+        <div id="sidebar-content" class="sidebar-content">
+            <div class="nav-menu">
+                <div class="nav-item active" onclick="switchView('dashboard', this)">Executive Dashboard</div>
+                <div class="nav-item" onclick="switchView('predictions', this)">Advanced Predictions</div>
+                <div class="nav-item" onclick="switchView('reports', this)">Detailed Reports</div>
+                <div class="nav-item" onclick="switchView('editor', this)"
+                    style="border-left: 3px solid var(--primary); background: #f8fafc;">Data Editor</div>
+            </div>
+
+            <div class="filters-section">
+                <h3>Dashboard Filters</h3>
+                <div class="filter-group">
+                    <label>Country / Region</label>
+                    <div class="filter-options three-cols" id="options-country">
+                        <div class="filter-opt active" onclick="selectFilter('country', 'All', this)">All</div>
+                        <div class="filter-opt" onclick="selectFilter('country', 'Italy', this)">Italy</div>
+                        <div class="filter-opt" onclick="selectFilter('country', 'Sweden', this)">Sweden</div>
+                    </div>
+                </div>
+                <div class="filter-group">
+                    <label>Product Line</label>
+                    <div class="filter-options" id="options-product">
+                        <div class="filter-opt active full-width" onclick="selectFilter('product', 'All', this)">All Products</div>
+                        <div class="filter-opt" onclick="selectFilter('product', 'iPhone', this)">iPhone</div>
+                        <div class="filter-opt" onclick="selectFilter('product', 'iPad Pro', this)">iPad Pro</div>
+                        <div class="filter-opt" onclick="selectFilter('product', 'MacBook Pro', this)">MacBook</div>
+                        <div class="filter-opt" onclick="selectFilter('product', 'Apple Watch', this)">Watch</div>
+                        <div class="filter-opt" onclick="selectFilter('product', 'AirPods Pro', this)">AirPods</div>
+                    </div>
+                </div>
+                <div class="filter-group">
+                    <label>Period / Month</label>
+                    <div class="filter-options" id="options-month">
+                        <div class="filter-opt active full-width" onclick="selectFilter('month', 'All', this)">Full Semester</div>
+                        <div class="filter-opt" onclick="selectFilter('month', 'Oct 2026', this)">Oct 26</div>
+                        <div class="filter-opt" onclick="selectFilter('month', 'Nov 2026', this)">Nov 26</div>
+                        <div class="filter-opt" onclick="selectFilter('month', 'Dec 2026', this)">Dec 26</div>
+                        <div class="filter-opt" onclick="selectFilter('month', 'Jan 2027', this)">Jan 27</div>
+                        <div class="filter-opt" onclick="selectFilter('month', 'Feb 2027', this)">Feb 27</div>
+                        <div class="filter-opt" onclick="selectFilter('month', 'Mar 2027', this)">Mar 27</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="scenario-section">
+                <h3>Scenario Modifiers</h3>
+                <button class="reset-btn" onclick="resetScenarios()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="1 4 1 10 7 10"></polyline>
+                        <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+                    </svg>
+                    Reset Defaults
+                </button>
+
+                <details open>
+                    <summary>Global Cost Drivers</summary>
+                    <div class="details-content">
+                        <div class="control-group">
+                            <label>Material Costs</label>
+                            <div class="stepper">
+                                <button class="step-btn" onclick="adjustValue('mat', null, -0.05)">-</button>
+                                <div class="step-val" id="lbl_mat">1.00x</div>
+                                <button class="step-btn" onclick="adjustValue('mat', null, 0.05)">+</button>
+                            </div>
+                        </div>
+                        <div class="control-group">
+                            <label>Labor Costs</label>
+                            <div class="stepper">
+                                <button class="step-btn" onclick="adjustValue('labor', null, -0.05)">-</button>
+                                <div class="step-val" id="lbl_labor">1.00x</div>
+                                <button class="step-btn" onclick="adjustValue('labor', null, 0.05)">+</button>
+                            </div>
+                        </div>
+                        <div class="control-group">
+                            <label>OpEx (M€)</label>
+                            <div class="stepper">
+                                <button class="step-btn" onclick="adjustValue('opex', null, -1)">-</button>
+                                <div class="step-val" id="lbl_opex">25.0</div>
+                                <button class="step-btn" onclick="adjustValue('opex', null, 1)">+</button>
+                            </div>
+                        </div>
+                    </div>
+                </details>
+
+                <details>
+                    <summary>Product Volume</summary>
+                    <div class="details-content" id="vol_controls"></div>
+                </details>
+
+                <details>
+                    <summary>Product Pricing</summary>
+                    <div class="details-content" id="price_controls"></div>
+                </details>
+            </div>
+        </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="main-content">
+        <!-- 1. DASHBOARD VIEW -->
+        <div id="view-dashboard" class="view-section active">
+            <header class="header">
+                <div>
+                    <h1>Executive Dashboard</h1>
+                    <p style="color: var(--text-muted); margin: 4px 0 0;">Current financial performance and KPIs</p>
+                </div>
+                <button class="export-btn" onclick="downloadPDF()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                    Download PDF Report
+                </button>
+            </header>
+
+            <div class="kpi-grid">
+                <div class="kpi-card">
+                    <h3>Total Revenue</h3>
+                    <div class="value" id="kpi-revenue">-</div>
+                    <div class="trend" id="kpi-units">-</div>
+                </div>
+                <div class="kpi-card">
+                    <h3>Gross Profit</h3>
+                    <div class="value" id="kpi-gross">-</div>
+                    <div class="trend" id="kpi-gross-margin">-</div>
+                </div>
+                <div class="kpi-card">
+                    <h3>Operating Income</h3>
+                    <div class="value" id="kpi-opinc">-</div>
+                    <div class="trend" id="kpi-op-margin">-</div>
+                </div>
+                <div class="kpi-card">
+                    <h3>Total COGS</h3>
+                    <div class="value" id="kpi-cogs">-</div>
+                    <div class="trend" style="color:var(--text-muted)">Materials & Labor</div>
+                </div>
+            </div>
+
+            <div class="charts-grid">
+                <div class="chart-container">
+                    <h3>Revenue by Month</h3><canvas id="revenueChart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <h3>Product Revenue Mix</h3><canvas id="mixChart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <h3>Production vs Sales (Units)</h3><canvas id="prodSalesChart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <h3>Country Performance</h3><canvas id="countryChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. PREDICTIONS VIEW -->
+        <div id="view-predictions" class="view-section">
+            <header class="header">
+                <div>
+                    <h1>Advanced Predictions & Forecasting</h1>
+                    <p style="color: var(--text-muted); margin: 4px 0 0;">Machine Learning extrapolations (Linear OLS) &
+                        Break-Even Analysis</p>
+                </div>
+                <button class="export-btn" onclick="downloadPDF()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                    Download PDF Report
+                </button>
+            </header>
+
+            <div class="kpi-grid">
+                <div class="kpi-card">
+                    <h3>Blended Break-Even</h3>
+                    <div class="value" id="kpi-be">-</div>
+                    <div class="trend" id="kpi-be-status">-</div>
+                </div>
+                <div class="kpi-card">
+                    <h3>Next Qtr Projected Revenue</h3>
+                    <div class="value" id="kpi-nq-rev">-</div>
+                    <div class="trend">Based on ML Extrapolation</div>
+                </div>
+            </div>
+
+            <div class="charts-grid">
+                <div class="chart-container full-width">
+                    <h3>Overall Revenue Forecast</h3><canvas id="forecastChart" height="80"></canvas>
+                </div>
+                <div class="chart-container">
+                    <h3>Regional Trajectories</h3><canvas id="countryForecastChart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <h3>Gross Margin Forecast (%)</h3><canvas id="marginForecastChart"></canvas>
+                </div>
+                <div class="chart-container full-width">
+                    <h3>Product-Specific Trajectories</h3><canvas id="productForecastChart" height="100"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. REPORTS VIEW -->
+        <div id="view-reports" class="view-section">
+            <header class="header">
+                <div>
+                    <h1>Detailed Reports & Insights</h1>
+                    <p style="color: var(--text-muted); margin: 4px 0 0;">Executive statements and tabular breakdowns
+                    </p>
+                </div>
+                <button class="export-btn" onclick="downloadPDF()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                    Download PDF Report
+                </button>
+            </header>
+
+            <div class="kpi-grid" id="insights-container" style="margin-bottom: 24px;"></div>
+
+            <div class="chart-container full-width">
+                <h3 style="margin-top: 0;">Raw Data Breakdown</h3>
+                <div class="table-responsive">
+                    <table id="reportsTable">
+                        <thead>
+                            <tr>
+                                <th>Month</th>
+                                <th>Product</th>
+                                <th>Units Sold</th>
+                                <th>Production Qty</th>
+                                <th>Generated Revenue</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. DATA EDITOR VIEW -->
+        <div id="view-editor" class="view-section">
+            <header class="header">
+                <div>
+                    <h1>Live Data Editor</h1>
+                    <p style="color: var(--text-muted); margin: 4px 0 0;">Edit base-case parameters to instantly
+                        recalculate all reports.</p>
+                </div>
+                <button class="export-btn" onclick="downloadPDF()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                    Download PDF Report
+                </button>
+            </header>
+
+            <div class="chart-container full-width">
+                <h3 style="margin-top: 0;">Base Product Pricing (€)</h3>
+                <div class="table-responsive">
+                    <table id="editPricesTable">
+                        <thead>
+                            <tr>
+                                <th>Country</th>
+                                <th>Product</th>
+                                <th>Base Price (€)</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="chart-container full-width">
+                <h3>Base Unit Sales Forecast</h3>
+                <div class="table-responsive">
+                    <table id="editSalesTable">
+                        <thead>
+                            <tr>
+                                <th>Country</th>
+                                <th>Product</th>
+                                <th>Oct 2026</th>
+                                <th>Nov 2026</th>
+                                <th>Dec 2026</th>
+                                <th>Jan 2027</th>
+                                <th>Feb 2027</th>
+                                <th>Mar 2027</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Chatbot Trigger (FAB) -->
+    <div id="chat-trigger" class="chat-trigger" onclick="toggleChat()" style="padding: 0; overflow: hidden; background: none; border: 2px solid var(--primary); box-shadow: 0 8px 32px rgba(37, 99, 235, 0.3);">
+        <img src="/static/logo.png" alt="Chatbot Icon" style="width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s ease;">
+    </div>
+
+    <!-- Chatbot Window Container -->
+    <div id="chatbot-container" class="chatbot-container">
+        <div class="chatbot-header">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <img src="/static/logo.png" alt="Avatar" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 1px solid rgba(255,255,255,0.2);">
+                <div style="text-align: left;">
+                    <div style="font-weight: 600; font-size: 0.9rem; line-height: 1.2;">AI Assistant</div>
+                    <div style="font-size: 0.7rem; color: #10b981; display: flex; align-items: center; gap: 4px;">
+                        <span
+                            style="width: 6px; height: 6px; background: #10b981; border-radius: 50%; display: inline-block;"></span>
+                        Active Now
+                    </div>
+                </div>
+            </div>
+            <button class="chat-close" onclick="toggleChat()">&times;</button>
+        </div>
+        <div class="chatbot-body" id="chatbot-body">
+            <div class="chat-msg bot-msg">Hello! I am your Apple Financial Assistant. Ask me about revenue, profit,
+                margins, or forecasts based on the current scenario!<br><br><i>Developed by <a
+                        href="https://vedantjoliya.free.nf/" target="_blank">Vedant Joliya</a></i></div>
+        </div>
+        <div class="chatbot-input">
+            <input type="text" id="chat-input" placeholder="Ask a question..." onkeypress="handleChat(event)">
+            <button onclick="sendChat()">Send</button>
+        </div>
+    </div>
+
+    <script>
+        const formatEur = (num) => '€' + num.toLocaleString(undefined, { maximumFractionDigits: 0 });
+        const formatPct = (num) => num.toFixed(1) + '% Margin';
+        const products = ["iPhone", "iPad Pro", "MacBook Pro", "Apple Watch", "AirPods Pro"];
+        let chartsInstance = {};
+
+        // Application State
+        let state = {
+            mat: 1.0, labor: 1.0, opex: 25.0,
+            vol: { "iPhone": 1.0, "iPad Pro": 1.0, "MacBook Pro": 1.0, "Apple Watch": 1.0, "AirPods Pro": 1.0 },
+            price: { "iPhone": 1.0, "iPad Pro": 1.0, "MacBook Pro": 1.0, "Apple Watch": 1.0, "AirPods Pro": 1.0 }
+        };
+
+        // Data Editor Overrides
+        let overrides = { sales: {}, prices: {} };
+
+        // Dashboard Filters State (Supports Multiple Selected Options)
+        let filters = {
+            country: ["All"],
+            product: ["All"],
+            month: ["All"]
+        };
+
+        function selectFilter(category, value, element) {
+            let current = filters[category] || ["All"];
+            
+            if (value === "All") {
+                // Clicking 'All' deselects everything else
+                current = ["All"];
+                element.parentElement.querySelectorAll('.filter-opt').forEach(opt => opt.classList.remove('active'));
+                element.classList.add('active');
+            } else {
+                // Toggling specific option
+                current = current.filter(val => val !== "All");
+                if (current.includes(value)) {
+                    current = current.filter(val => val !== value);
+                    element.classList.remove('active');
+                } else {
+                    current.push(value);
+                    element.classList.add('active');
+                }
+                
+                // If nothing active, default to All
+                if (current.length === 0) {
+                    current = ["All"];
+                    const allOpt = element.parentElement.querySelector('.filter-opt[onclick*="All"]');
+                    if (allOpt) allOpt.classList.add('active');
+                } else {
+                    // Make sure 'All' option is visually inactive
+                    const allOpt = element.parentElement.querySelector('.filter-opt[onclick*="All"]');
+                    if (allOpt) allOpt.classList.remove('active');
+                }
+            }
+            
+            filters[category] = current;
+            fetchData();
+        }
+
+        function setupUI() {
+            const createSteppers = (containerId, prefix) => {
+                const container = document.getElementById(containerId);
+                products.forEach(p => {
+                    const idSafe = p.replace(/\s/g, '');
+                    container.innerHTML += `
+                        <div class="control-group">
+                            <label>${p}</label>
+                            <div class="stepper">
+                                <button class="step-btn" onclick="adjustValue('${prefix}', '${p}', -0.05)">-</button>
+                                <div class="step-val" id="lbl_${prefix}_${idSafe}">1.00x</div>
+                                <button class="step-btn" onclick="adjustValue('${prefix}', '${p}', 0.05)">+</button>
+                            </div>
+                        </div>
+                    `;
+                });
+            };
+            createSteppers('vol_controls', 'vol');
+            createSteppers('price_controls', 'price');
+
+            // Fetch initial base data to render editors
+            fetch('/api/base_data').then(r => r.json()).then(renderEditors);
+        }
+
+        function switchView(viewId, element) {
+            document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            document.getElementById('view-' + viewId).classList.add('active');
+            element.classList.add('active');
+
+            // Force charts to resize now that their container is visible
+            for (let id in chartsInstance) {
+                if (document.getElementById(id).closest('#view-' + viewId)) {
+                    chartsInstance[id].resize();
+                }
+            }
+        }
+
+        let timeout = null;
+        function adjustValue(category, key, delta) {
+            if (key) {
+                state[category][key] = Math.max(0.1, state[category][key] + delta);
+                document.getElementById(`lbl_${category}_${key.replace(/\s/g, '')}`).innerText = state[category][key].toFixed(2) + 'x';
+            } else {
+                if (category === 'opex') {
+                    state.opex = Math.max(1, state.opex + delta);
+                    document.getElementById('lbl_opex').innerText = state.opex.toFixed(1);
+                } else {
+                    state[category] = Math.max(0.1, state[category] + delta);
+                    document.getElementById(`lbl_${category}`).innerText = state[category].toFixed(2) + 'x';
+                }
+            }
+            clearTimeout(timeout);
+            timeout = setTimeout(fetchData, 300);
+        }
+
+        function resetScenarios() {
+            state.mat = 1.0; state.labor = 1.0; state.opex = 25.0;
+            products.forEach(p => { state.vol[p] = 1.0; state.price[p] = 1.0; });
+
+            document.getElementById('lbl_mat').innerText = "1.00x";
+            document.getElementById('lbl_labor').innerText = "1.00x";
+            document.getElementById('lbl_opex').innerText = "25.0";
+            products.forEach(p => {
+                const idSafe = p.replace(/\s/g, '');
+                document.getElementById(`lbl_vol_${idSafe}`).innerText = "1.00x";
+                document.getElementById(`lbl_price_${idSafe}`).innerText = "1.00x";
+            });
+
+            // Reset filters state
+            filters.country = ["All"];
+            filters.product = ["All"];
+            filters.month = ["All"];
+            
+            // Reset option visual UI active classes
+            const resetContainerOptions = (containerId) => {
+                const opts = document.querySelectorAll(`#${containerId} .filter-opt`);
+                if (opts.length > 0) {
+                    opts.forEach(o => o.classList.remove('active'));
+                    opts[0].classList.add('active'); // "All" is always first
+                }
+            };
+            resetContainerOptions('options-country');
+            resetContainerOptions('options-product');
+            resetContainerOptions('options-month');
+
+            fetchData();
+        }
+
+        // Data Editor Interactions
+        function renderEditors(baseData) {
+            const tbodySales = document.querySelector('#editSalesTable tbody');
+            const tbodyPrices = document.querySelector('#editPricesTable tbody');
+
+            baseData.countries.forEach(c => {
+                baseData.products.forEach((p, pIdx) => {
+                    // Prices
+                    const prKey = `${c}_${p}`;
+                    let trPr = document.createElement('tr');
+                    trPr.innerHTML = `<td>${c}</td><td>${p}</td><td contenteditable="true" onblur="handleEdit('prices', '${prKey}', this.innerText)">${baseData.prices[c][p]}</td>`;
+                    tbodyPrices.appendChild(trPr);
+
+                    // Sales
+                    let trSa = document.createElement('tr');
+                    let salesCols = baseData.months.map(m => {
+                        const sKey = `${c}_${m}_${p}`;
+                        return `<td contenteditable="true" onblur="handleEdit('sales', '${sKey}', this.innerText)">${baseData.sales[c][m][pIdx]}</td>`;
+                    }).join('');
+                    trSa.innerHTML = `<td>${c}</td><td>${p}</td>${salesCols}`;
+                    tbodySales.appendChild(trSa);
+                });
+            });
+        }
+
+        function handleEdit(type, key, value) {
+            let num = parseFloat(value.replace(/,/g, ''));
+            if (isNaN(num)) return; // Ignore invalid edits
+            overrides[type][key] = num;
+            fetchData(); // Trigger recalculation
+        }
+
+        function downloadPDF() {
+            // Force rendering of all canvases by temporarily exposing all views
+            const views = document.querySelectorAll('.view-section');
+            views.forEach(v => { v.style.display = 'block'; v.style.position = 'absolute'; v.style.opacity = '0'; v.style.zIndex = '-100'; });
+            for (let id in chartsInstance) { chartsInstance[id].resize(); }
+
+            let chartImages = {};
+            if (chartsInstance['revenueChart']) chartImages['revenue'] = chartsInstance['revenueChart'].toBase64Image();
+            if (chartsInstance['mixChart']) chartImages['mix'] = chartsInstance['mixChart'].toBase64Image();
+            if (chartsInstance['prodSalesChart']) chartImages['prod_sales'] = chartsInstance['prodSalesChart'].toBase64Image();
+            if (chartsInstance['countryChart']) chartImages['country'] = chartsInstance['countryChart'].toBase64Image();
+            if (chartsInstance['forecastChart']) chartImages['forecast'] = chartsInstance['forecastChart'].toBase64Image();
+            if (chartsInstance['countryForecastChart']) chartImages['country_forecast'] = chartsInstance['countryForecastChart'].toBase64Image();
+            if (chartsInstance['marginForecastChart']) chartImages['margin_forecast'] = chartsInstance['marginForecastChart'].toBase64Image();
+            if (chartsInstance['productForecastChart']) chartImages['product_forecast'] = chartsInstance['productForecastChart'].toBase64Image();
+
+            // Restore view layouts
+            views.forEach(v => { v.style.display = ''; v.style.position = ''; v.style.opacity = ''; v.style.zIndex = ''; });
+
+            const payload = {
+                scen: { mat: state.mat, labor: state.labor, opex: state.opex * 1000000, vol: state.vol, price: state.price },
+                overrides: overrides,
+                filters: filters,
+                images: chartImages
+            };
+
+            const originalTexts = [];
+            const btns = document.querySelectorAll('.export-btn');
+            btns.forEach((b, i) => { originalTexts[i] = b.innerHTML; b.innerHTML = "⏳ Generating PDF..."; });
+
+            fetch('/api/download_pdf', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+                .then(res => res.blob())
+                .then(blob => {
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `Apple_Report.pdf`;
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                    btns.forEach((b, i) => { b.innerHTML = originalTexts[i]; });
+                });
+        }
+
+        function fetchData() {
+            const payload = {
+                scen: { mat: state.mat, labor: state.labor, opex: state.opex * 1000000, vol: state.vol, price: state.price },
+                overrides: overrides,
+                filters: filters
+            };
+
+            fetch('/api/data', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+                .then(res => res.json())
+                .then(data => {
+                    document.getElementById('kpi-revenue').innerText = formatEur(data.kpi.revenue);
+                    document.getElementById('kpi-units').innerText = data.kpi.units.toLocaleString() + " Units Sold";
+                    document.getElementById('kpi-gross').innerText = formatEur(data.kpi.gross);
+                    document.getElementById('kpi-gross-margin').innerText = formatPct(data.kpi.gross_margin);
+                    document.getElementById('kpi-opinc').innerText = formatEur(data.kpi.op_inc);
+                    document.getElementById('kpi-op-margin').innerText = formatPct(data.kpi.op_margin);
+                    document.getElementById('kpi-cogs').innerText = formatEur(data.kpi.cogs);
+
+                    document.getElementById('kpi-be').innerText = data.kpi.break_even.toLocaleString() + " Units";
+                    let beDiff = data.kpi.units - data.kpi.break_even;
+                    document.getElementById('kpi-be-status').innerText = (beDiff >= 0 ? "+" : "") + beDiff.toLocaleString() + " vs Actual Sales";
+                    document.getElementById('kpi-be-status').style.color = beDiff >= 0 ? "#10b981" : "#ef4444";
+                    document.getElementById('kpi-nq-rev').innerText = formatEur(data.kpi.next_qtr_rev);
+
+                    renderCharts(data.charts);
+                    renderTable(data.reports);
+                    renderInsights(data.insights);
+                });
+        }
+
+        function renderInsights(insights) {
+            const container = document.getElementById('insights-container');
+            container.innerHTML = '';
+            if (!insights) return;
+            insights.forEach(ins => {
+                container.innerHTML += `
+                    <div class="kpi-card" style="border-left: 4px solid var(--primary);">
+                        <h3 style="color: var(--primary);">${ins.title}</h3>
+                        <div class="value" style="font-size: 1.4rem;">${ins.value}</div>
+                        <div class="trend" style="color: var(--text-muted); font-weight: normal; font-size: 0.85rem;">${ins.description}</div>
+                    </div>
+                `;
+            });
+        }
+
+        function renderTable(reports) {
+            const tbody = document.querySelector('#reportsTable tbody');
+            tbody.innerHTML = '';
+            reports.forEach(r => {
+                tbody.innerHTML += `<tr>
+                    <td>${r.Month}</td>
+                    <td><b>${r.Product}</b></td>
+                    <td>${r.Units.toLocaleString()}</td>
+                    <td>${r.Production.toLocaleString()}</td>
+                    <td>${formatEur(r.Revenue)}</td>
+                </tr>`;
+            });
+        }
+
+        function renderCharts(c) {
+            const colors = ['#0f172a', '#3b82f6', '#64748b', '#94a3b8', '#cbd5e1'];
+            const createOrUpdate = (id, config) => {
+                if (chartsInstance[id]) chartsInstance[id].destroy();
+                chartsInstance[id] = new Chart(document.getElementById(id).getContext('2d'), config);
+            };
+
+            createOrUpdate('revenueChart', { type: 'bar', data: { labels: c.months, datasets: [{ label: 'Revenue', data: c.revenue, backgroundColor: colors[1], borderRadius: 4 }] }, options: { plugins: { legend: { display: false } } } });
+            createOrUpdate('mixChart', { type: 'doughnut', data: { labels: c.mix_labels, datasets: [{ data: c.mix_data, backgroundColor: colors, borderWidth: 0 }] }, options: { cutout: '70%', plugins: { legend: { position: 'right' } } } });
+            createOrUpdate('prodSalesChart', { type: 'line', data: { labels: c.months, datasets: [{ label: 'Production', data: c.prod_vol, borderColor: '#f59e0b', tension: 0.3, borderWidth: 3 }, { label: 'Sales', data: c.sales_vol, borderColor: '#10b981', tension: 0.3, borderWidth: 3 }] } });
+            createOrUpdate('countryChart', { type: 'bar', data: { labels: c.country_labels, datasets: [{ label: 'Revenue', data: c.country_data, backgroundColor: ['#3b82f6', '#10b981'], borderRadius: 4 }] }, options: { indexAxis: 'y', plugins: { legend: { display: false } } } });
+
+            const allLabels = [...c.months, ...c.forecast_months];
+            let histPlot = [...c.revenue, null, null, null];
+            let forePlot = [null, null, null, null, null, c.revenue[5], ...c.forecast];
+            createOrUpdate('forecastChart', { type: 'line', data: { labels: allLabels, datasets: [{ label: 'Actual', data: histPlot, borderColor: colors[0], borderWidth: 3, tension: 0.3 }, { label: 'Forecast', data: forePlot, borderColor: colors[1], borderDash: [5, 5], borderWidth: 3, tension: 0 }] } });
+
+            let cDatasets = [];
+            let i_c = 0;
+            const cColors = ['#10b981', '#3b82f6'];
+            for (let c_key in c.country_forecasts) {
+                let cData = c.country_forecasts[c_key];
+                let fullPlot = [...cData.historical, ...cData.forecast];
+                cDatasets.push({ label: c_key, data: fullPlot, borderColor: cColors[i_c % cColors.length], borderWidth: 2, tension: 0.3 });
+                i_c++;
+            }
+            createOrUpdate('countryForecastChart', { type: 'line', data: { labels: allLabels, datasets: cDatasets }, options: { plugins: { legend: { position: 'bottom' } } } });
+
+            let margHist = [...c.monthly_margin, null, null, null];
+            let margFore = [null, null, null, null, null, c.monthly_margin[5], ...c.margin_forecast];
+            createOrUpdate('marginForecastChart', { type: 'line', data: { labels: allLabels, datasets: [{ label: 'Historical Margin %', data: margHist, borderColor: '#f59e0b', borderWidth: 3, tension: 0.3 }, { label: 'Forecast Margin %', data: margFore, borderColor: '#fbbf24', borderDash: [5, 5], borderWidth: 3, tension: 0 }] } });
+
+            let prodDatasets = [];
+            let i = 0;
+            for (let p in c.product_forecasts) {
+                let pData = c.product_forecasts[p];
+                let fullPlot = [...pData.historical, ...pData.forecast];
+                prodDatasets.push({ label: p, data: fullPlot, borderColor: colors[i % colors.length], borderWidth: 2, tension: 0.3, pointRadius: 2 });
+                i++;
+            }
+            createOrUpdate('productForecastChart', { type: 'line', data: { labels: allLabels, datasets: prodDatasets }, options: { plugins: { legend: { position: 'bottom' } } } });
+        }
+
+        // Chatbot Logic
+        function toggleChat() {
+            const container = document.getElementById('chatbot-container');
+            const trigger = document.getElementById('chat-trigger');
+            container.classList.toggle('visible');
+            trigger.classList.toggle('active');
+        }
+
+        function handleChat(e) { if (e.key === 'Enter') sendChat(); }
+
+        function sendChat() {
+            const input = document.getElementById('chat-input');
+            const msg = input.value.trim();
+            if (!msg) return;
+
+            appendChat(msg, 'user');
+            input.value = '';
+
+            const payload = {
+                question: msg,
+                scen: { mat: state.mat, labor: state.labor, opex: state.opex * 1000000, vol: state.vol, price: state.price },
+                overrides: overrides,
+                filters: filters
+            };
+
+            fetch('/api/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+                .then(r => r.json())
+                .then(data => {
+                    appendChat(data.answer, 'bot');
+                });
+        }
+
+        function appendChat(msg, sender) {
+            const body = document.getElementById('chatbot-body');
+            const div = document.createElement('div');
+            div.className = `chat-msg ${sender}-msg`;
+            div.innerHTML = msg;
+            body.appendChild(div);
+            body.scrollTop = body.scrollHeight;
+        }
+
+        // Init
+        setupUI();
+        fetchData();
+    </script>
+</body>
+
+</html>

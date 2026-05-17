@@ -1,0 +1,28 @@
+# Git
+.git
+.gitignore
+
+# Python caches and local environment
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# OS metadata
+.DS_Store
+Thumbs.db
+
+# Project local files and backup directories
+OLD/
+*.pdf
+.idea/
+.vscode/
+.gemini/
+*deployment_guide.md
+*DEPLOYMENT.md
